@@ -6,7 +6,7 @@ The comparable observations are hourly Twitch category averages from SullyGnome,
 
 ## Shape transfer
 
-Let `p1` be the target's known hour-1 viewers, floored at 1. For each comparable, parse `day_start` and each hourly timestamp. Retain only points exactly at `day_start + (h-1) hours`, for hours 1 through 24. Discard a comparable if its hour-1 viewers `c1` are missing or nonpositive.
+Let `p1` be the target's known hour-1 viewers, floored at 1. For each comparable, parse `day_start` and each hourly timestamp. Retain only points exactly at `day_start + (h-1) hours`, for hours 1 through 24. Discard a comparable if its hour-1 viewers `c1` are missing or nonpositive. Before weighting, retain only comparables within the magnitude window `|ln(c1 / p1)| <= 2.0`; exclude all others.
 
 For positive observations, compute:
 
@@ -17,7 +17,7 @@ w_c = (1 + |ln(c1 / p1)|)^-2.5
 
 For each hour 2 through 24, form the weighted distribution of `ln r_c(h)`. At levels `tau = [0.05, 0.25, 0.5, 0.75, 0.95]`, take the weighted step quantile: sort the values and choose the first whose cumulative weight reaches `tau * total_weight`. This transfers realised launch shapes while favouring comparables with similar first-hour magnitudes.
 
-After the sparse-hour adjustment below, smooth each log-quantile independently across neighbouring hours with weights `0.25 / 0.5 / 0.25`. Renormalise the available weights at hours 2 and 24. Then convert back to viewers:
+After the sparse-hour adjustment below, smooth each log-quantile independently across hours `h-2` through `h+2` with weights `0.1 / 0.2 / 0.4 / 0.2 / 0.1`. Renormalise over the hours present in the log-quantile map at boundaries. Then convert back to viewers:
 
 ```text
 q_tau(h) = p1 * exp(smoothed_log_quantile_tau(h))
@@ -67,7 +67,7 @@ loss = 2 * max(tau * d, (tau - 1) * d)
 
 The aggregate averages over all scored items. The house comparison uses the persistence formula above, with the same output bounds and rounding as the runtime fallback.
 
-Re-running on the kit's `p00.in` after the sparse-hour blend gives **37 targets**, model mean pinball **0.435234356**, and house mean pinball **0.929650407**. Both scores are unchanged from before the revision. These are held-out comparable results, not a measurement on the final competition target.
+Re-running on the kit's `p00.in` after the magnitude window exclusion and five-point smoothing gives **37 targets**, model mean pinball **0.429417342**, and house mean pinball **0.929650407**. These are held-out comparable results, not a measurement on the final competition target.
 
 ## Uncertainty
 

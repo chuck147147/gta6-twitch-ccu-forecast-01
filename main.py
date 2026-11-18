@@ -77,6 +77,8 @@ def forecast_from_pool(p1, pool):
         return house_forecast(p1)
     data = {h: [] for h in range(2, 25)}
     for c1, hours in pool:
+        if abs(math.log(c1 / p1)) > 2.0:
+            continue
         weight = (1 + abs(math.log(c1 / p1))) ** -2.5
         for h in data:
             viewers = hours.get(h, 0)
@@ -101,7 +103,8 @@ def forecast_from_pool(p1, pool):
                            for empirical, z in zip(logs[h], Z)]
     result = []
     for h in range(2, 25):
-        neighbors = [(k, w) for k, w in ((h - 1, 0.25), (h, 0.5), (h + 1, 0.25)) if k in logs]
+        neighbors = [(k, w) for k, w in ((h - 2, 0.1), (h - 1, 0.2), (h, 0.4),
+                                       (h + 1, 0.2), (h + 2, 0.1)) if k in logs]
         total = sum(w for _, w in neighbors)
         smooth = [sum(w * logs[k][i] for k, w in neighbors) / total for i in range(5)]
         result.append({'hour': h, 'q': quantiles_from_logs(p1, smooth)})
